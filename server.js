@@ -3,6 +3,12 @@ const axios = require('axios');
 const app = express();
 const PORT = 3000;
 
+// Dados de autenticação Shopify
+const API_KEY = '6430407dc0ac99fa1fa2149d51d07997';
+const API_SECRET = '27055a76ce75523517c404f15085a4fc';
+const ACCESS_TOKEN = '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';
+const SHOPIFY_STORE_URL = 'https://gr0p9a-63.myshopify.com';
+
 // Middleware para permitir JSON no corpo da requisição
 app.use(express.json());
 
@@ -15,50 +21,102 @@ const tabelaFrete = {
     PR: 18.96, RS: 18.96, SC: 18.96
 };
 
+// Função para validar o CEP usando a API ViaCEP (caso necessário)
+async function validarCep(cep) {
+    try {
+        const response = await axios.get(`https://viacep.com.br/ws/${cep}/json/`);
+        if (response.data.erro) {
+            return null; // Retorna null se o CEP for inválido
+        }
+        return response.data; // Retorna os dados do endereço se válido
+    } catch (error) {
+        console.error('Erro ao validar o CEP:', error);
+        return null; // Em caso de erro, retorna null
+    }
+}
+
 // Endpoint para processar webhook da Shopify
 app.post('/calcularfrete', async (req, res) => {
     try {
-
         console.log('Payload recebido:', JSON.stringify(req.body, null, 2));
-        // Dados do webhook
-        const { shipping_address, line_items } = req.body;
 
-        
+        // Dados do webhook
+        const { checkout } = req.body;
+
+        if (!checkout) {
+            return res.status(400).json({ error: 'Dados do checkout não encontrados.' });
+        }
+
+        const { shipping_address, line_items } = checkout;
+
         if (!shipping_address || !line_items) {
             return res.status(400).json({ error: 'Dados insuficientes para calcular o frete.' });
         }
 
         const estado = shipping_address.province_code; // Código do estado (ex.: SP, RJ)
-        const quantidadeTotal = line_items.reduce((total, item) => total + item.quantity, 0);
+        const cep = shipping_address.zip; // CEP do endereço de entrega
 
-        // Validações
+        // Validação do CEP (opcional, caso você queira validar o CEP)
+        const dadosCep = await validarCep(cep);
+        if (!dadosCep) {
+            return res.status(400).json({ error: 'CEP inválido.' });
+        }
+
+        // Validações do estado
         if (!tabelaFrete[estado]) {
             return res.status(400).json({ error: 'Estado inválido ou não suportado.' });
         }
 
+        // Cálculo do frete
+        const quantidadeTotal = line_items.reduce((total, item) => total + item.quantity, 0);
         const valorBase = tabelaFrete[estado];
         const adicionalPorItem = 5;
         const totalFrete = valorBase + (quantidadeTotal - 1) * adicionalPorItem;
 
-        // Resposta para Shopify
+        // Resposta para a Shopify com o valor do frete calculado
         res.json({
-            fulfillment_service: 'manual',
-            shipping_lines: [
+            rates: [
                 {
-                    title: 'Frete Personalizado',
-                    price: totalFrete.toFixed(2),
-                    code: 'FRETE_PERSONALIZADO'
+                    service_name: 'Frete Personalizado',
+                    service_code: 'FRETE_PERSONALIZADO',
+                    total_price: (totalFrete * 100).toString(), // Preço em centavos
+                    currency: 'BRL',
                 }
             ]
         });
     } catch (error) {
-        console.error('Erro ao calcular frete:', error);
-        res.status(500).json({ error: 'Erro interno ao calcular frete.' });
+        console.error('Erro ao processar webhook:', error);
+        res.status(500).json({ error: 'Erro interno ao processar o webhook.' });
     }
 });
+
+// Função para criar o webhook na Shopify
+async function criarWebhook() {
+    const webhookData = {
+        webhook: {
+            topic: 'checkouts/update',
+            address: 'https://frete.fly.dev/calcularfrete', // URL do seu servidor
+            format: 'json',
+        }
+    };
+
+    try {
+        const response = await axios.post(`${SHOPIFY_STORE_URL}/admin/api/2023-01/webhooks.json`, webhookData, {
+            headers: {
+                'X-Shopify-Access-Token': ACCESS_TOKEN,
+                'Content-Type': 'application/json',
+            },
+        });
+        console.log('Webhook criado com sucesso:', response.data);
+    } catch (error) {
+        console.error('Erro ao criar o webhook:', error.response.data);
+    }
+}
+
+// Chama a função para criar o webhook (você pode chamar isso uma vez durante a configuração inicial)
+criarWebhook();
 
 // Inicia o servidor
 app.listen(PORT, () => {
     console.log(`Servidor rodando em http://localhost:${PORT}`);
 });
-
