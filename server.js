@@ -41,14 +41,12 @@ const calcularFrete = (endereco) => {
 // Função para atualizar a taxa de frete no Shopify
 const atualizarFreteShopify = async (checkoutId, taxaFrete) => {
   const payload = {
-    "shipping_rates": [
-      {
-        "title": "Fretagem personalizada",
-        "price": (taxaFrete / 100 * 80.97).toFixed(2),  // Calculando o valor com base no total da compra
-        "code": "custom_shipping_rate",
-        "source": "Custom"
-      }
-    ]
+    "shipping_rate": {  // Alterado de 'shipping_rates' para 'shipping_rate'
+      "title": "Fretagem personalizada",
+      "price": (taxaFrete / 100 * 80.97).toFixed(2),  // Calculando o valor com base no total da compra
+      "code": "custom_shipping_rate",
+      "source": "Custom"
+    }
   };
 
   console.log('Payload enviado para Shopify:', payload);
