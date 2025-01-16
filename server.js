@@ -8,6 +8,12 @@ const port = 3000;
 // Middleware para interpretar JSON
 app.use(bodyParser.json());
 
+// Credenciais da Shopify
+const API_KEY = '6430407dc0ac99fa1fa2149d51d07997';
+const API_SECRET = '27055a76e75523517c404f15085a4fc';
+const ACCESS_TOKEN = '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';
+const SHOPIFY_STORE_URL = 'https://gr0p9a-63.myshopify.com';
+
 // Função para calcular o frete com base na região
 const calcularFrete = (endereco) => {
   console.log('Calculando frete...');
@@ -34,9 +40,6 @@ const calcularFrete = (endereco) => {
 
 // Função para atualizar a taxa de frete no Shopify
 const atualizarFreteShopify = async (checkoutId, taxaFrete) => {
-  const shopifyAccessToken = 'SEU_TOKEN_DE_ACESSO'; // Substitua pelo seu token de acesso
-  const shopifyStoreUrl = 'https://SEU_SHOP.myshopify.com'; // Substitua pela sua URL da loja
-
   const payload = {
     "shipping_rates": [
       {
@@ -50,11 +53,11 @@ const atualizarFreteShopify = async (checkoutId, taxaFrete) => {
 
   try {
     const response = await axios.post(
-      `${shopifyStoreUrl}/admin/api/2023-01/checkouts/${checkoutId}/shipping_rates.json`,
+      `${SHOPIFY_STORE_URL}/admin/api/2023-01/checkouts/${checkoutId}/shipping_rates.json`,
       payload,
       {
         headers: {
-          'X-Shopify-Access-Token': shopifyAccessToken,
+          'X-Shopify-Access-Token': ACCESS_TOKEN,
           'Content-Type': 'application/json'
         }
       }
