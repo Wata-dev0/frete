@@ -18,7 +18,7 @@ const tabelaFrete = {
 // Endpoint para processar webhook da Shopify
 app.post('/calcularfrete', async (req, res) => {
     try {
-        
+
         console.log('Payload recebido:', JSON.stringify(req.body, null, 2));
         // Dados do webhook
         const { shipping_address, line_items } = req.body;
@@ -61,3 +61,4 @@ app.post('/calcularfrete', async (req, res) => {
 app.listen(PORT, () => {
     console.log(`Servidor rodando em http://localhost:${PORT}`);
 });
+
