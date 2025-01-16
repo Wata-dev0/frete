@@ -44,16 +44,18 @@ const atualizarFreteShopify = async (checkoutId, taxaFrete) => {
     "shipping_rates": [
       {
         "title": "Fretagem personalizada",
-        "price": taxaFrete.toFixed(2),
+        "price": (taxaFrete / 100 * 80.97).toFixed(2),  // Calculando o valor com base no total da compra
         "code": "custom_shipping_rate",
         "source": "Custom"
       }
     ]
   };
 
+  console.log('Payload enviado para Shopify:', payload);
+
   try {
     const response = await axios.post(
-      `${SHOPIFY_STORE_URL}/admin/api/2023-01/checkouts/${checkoutId}/shipping_rates.json`,
+      `${SHOPIFY_STORE_URL}/admin/api/2025-01/checkouts/${checkoutId}/shipping_rates.json`,  // Usando a versão 2025-01
       payload,
       {
         headers: {
@@ -64,7 +66,11 @@ const atualizarFreteShopify = async (checkoutId, taxaFrete) => {
     );
     console.log('Frete atualizado no Shopify:', response.data);
   } catch (error) {
-    console.error('Erro ao atualizar o frete no Shopify:', error.response ? error.response.data : error.message);
+    console.error('Erro ao atualizar o frete no Shopify:');
+    // Captura a resposta de erro completa
+    console.error('Status:', error.response?.status);
+    console.error('Resposta:', error.response?.data);
+    console.error('Mensagem:', error.message);
   }
 };
 
