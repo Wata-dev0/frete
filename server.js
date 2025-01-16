@@ -3,11 +3,15 @@ const axios = require('axios');
 const app = express();
 const PORT = 3000;
 
+const dotenv = require('dotenv');
+dotenv.config();
+
+const SHOPIFY_STORE_URL = process.env.SHOPIFY_STORE_URL; // URL da loja Shopify
+const ACCESS_TOKEN = process.env.ACCESS_TOKEN;
+
+
 // Dados de autenticação Shopify
-const API_KEY = '6430407dc0ac99fa1fa2149d51d07997';
-const API_SECRET = '27055a76ce75523517c404f15085a4fc';
-const ACCESS_TOKEN = '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';
-const SHOPIFY_STORE_URL = 'https://gr0p9a-63.myshopify.com';
+
 
 // Middleware para permitir JSON no corpo da requisição
 app.use(express.json());
